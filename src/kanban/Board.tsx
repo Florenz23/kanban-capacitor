@@ -1,14 +1,20 @@
-import { useEffect, useReducer, useRef, useState } from 'react'
-import { boardReducer } from './boardReducer'
+import { useEffect, useRef, useState } from 'react'
+import type { Action } from './boardReducer'
 import { CardSheet } from './CardSheet'
 import { ListColumn } from './ListColumn'
 import { ListMenuSheet } from './ListMenuSheet'
 import { ListSwitcher } from './ListSwitcher'
 import { NewListSheet } from './NewListSheet'
-import { seedBoard } from './seed'
+import type { Board as BoardData } from './types'
+import { usePersistentBoard } from './usePersistentBoard'
 
 export function Board() {
-  const [board, dispatch] = useReducer(boardReducer, undefined, seedBoard)
+  const [board, dispatch] = usePersistentBoard()
+  if (!board) return <div className="board-bg h-dvh" />
+  return <BoardView board={board} dispatch={dispatch} />
+}
+
+function BoardView({ board, dispatch }: { board: BoardData; dispatch: (action: Action) => void }) {
   const [active, setActive] = useState(0)
   const [openCardId, setOpenCardId] = useState<string | null>(null)
   const [menuListId, setMenuListId] = useState<string | null>(null)
