@@ -51,15 +51,20 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/Build/Products/Release-iphonesimulator/App.app
           mkdir shots
-          xcrun simctl launch "$UDID" de.florenzerstling.kanban
+          # Everything the app logs, for when something goes wrong
+          xcrun simctl spawn "$UDID" log stream --level debug --style compact \
+            --predicate 'process == "App" OR subsystem CONTAINS "capgo" OR eventMessage CONTAINS "CapacitorUpdater"' > shots/app-log.txt 2>&1 &
+          LOG_PID=$!
+          xcrun simctl launch --terminate-running-process "$UDID" de.florenzerstling.kanban
           sleep 30
           xcrun simctl io "$UDID" screenshot shots/1-first-open.png
-          xcrun simctl terminate "$UDID" de.florenzerstling.kanban
+          xcrun simctl terminate "$UDID" de.florenzerstling.kanban || echo "app was not running"
           sleep 3
           xcrun simctl launch "$UDID" de.florenzerstling.kanban
           sleep 15
           xcrun simctl io "$UDID" screenshot shots/2-after-reopen.png
-          xcrun simctl spawn "$UDID" log show --last 3m --predicate 'process == "App"' --style compact > shots/app-log.txt || true
+          kill $LOG_PID || true
+          cp ~/Library/Logs/DiagnosticReports/App*.ips shots/ 2>/dev/null || echo "no crash reports"
 
       - uses: actions/upload-artifact@v4
         if: always()
