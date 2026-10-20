@@ -5,6 +5,12 @@
 > per video. The video's process state is in the dev folder:
 > `~/Workspace/video-projects/florenz-erstling-en/62-kanban-capacitor/state.json` — **read it first**.
 
+## What gets built
+
+- **The spec is `docs/SPEC.md`** — mobile-first, Capacitor-ready, with screenshots of the EN-58
+  reference app in `docs/screenshots/`. Build from it; no code is copied from EN-58.
+- **Build with Opus 5.5**, not Sonnet.
+
 ## Commit a lot, and commit clearly — the most important rule in this folder
 
 The video is produced with a **synthetic Claude Code session**: an agent later reads this folder's
