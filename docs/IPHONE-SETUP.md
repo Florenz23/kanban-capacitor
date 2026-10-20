@@ -50,3 +50,16 @@ That fills the free Apple ID: SideStore + Kanban + Test App = 3. More apps:
 - **Apple Developer Program**, $99 / 99 € a year: no 3-app limit, 1-year signing, TestFlight, App Store
 - **Free:** several apps inside one installed app (spec §4, nested routes `/kanban`, `/meals`), or
   deactivate an unused app in SideStore to free its slot
+
+## Live updates (works since 20 Oct, 16:59)
+
+After the .ipa with the updater is installed once, a push is enough: GitHub builds the web part on
+Linux (~20 s) and publishes `dist-<version>.zip` on the release `web-kanban`. The app asks the GitHub
+API when it opens, downloads the newer zip and shows **New version ready · Update now**.
+
+What it took to get there (each fix in the app's own update code needed a new .ipa):
+1. `version.json` on a GitHub release is served as `application/octet-stream` → the app couldn't read it. Now: GitHub API (real JSON, CORS allowed), version in the file name
+2. "Checksum required": the updater only accepts a zip with its SHA-256. GitHub's API lists a `sha256:` digest for every release file → passed to `download()`
+3. The status line next to "Version …" (downloading / ready / the error) is what made both visible on the phone
+
+Still needs an .ipa: native changes — new Capacitor plugins, the app icon, the app name.
