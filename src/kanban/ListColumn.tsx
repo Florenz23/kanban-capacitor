@@ -1,3 +1,4 @@
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Ellipsis, Plus, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { CardItem } from './CardItem'
@@ -80,9 +81,11 @@ export function ListColumn({ list, onOpenCard, onAddCard, onRename, onOpenMenu }
       </header>
 
       <div className="flex min-h-0 flex-col gap-2.5 overflow-y-auto overscroll-contain px-3 pb-2">
-        {list.cards.map((card) => (
-          <CardItem key={card.id} card={card} onOpen={() => onOpenCard(card)} />
-        ))}
+        <SortableContext items={list.cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+          {list.cards.map((card) => (
+            <CardItem key={card.id} card={card} listId={list.id} onOpen={() => onOpenCard(card)} />
+          ))}
+        </SortableContext>
         {list.cards.length === 0 && !adding && (
           <p className="py-4 text-center text-[15px] text-white/50">No cards yet</p>
         )}

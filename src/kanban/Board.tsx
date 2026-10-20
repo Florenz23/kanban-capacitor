@@ -1,5 +1,10 @@
+import {
+  closestCenter, DndContext, DragOverlay, MouseSensor, pointerWithin, TouchSensor, useSensor, useSensors,
+  type CollisionDetection, type DragEndEvent, type DragStartEvent,
+} from '@dnd-kit/core'
 import { useEffect, useRef, useState } from 'react'
 import type { Action } from './boardReducer'
+import { CardFace } from './CardItem'
 import { CardSheet } from './CardSheet'
 import { ListColumn } from './ListColumn'
 import { ListMenuSheet } from './ListMenuSheet'
@@ -22,6 +27,48 @@ function BoardView({ board, dispatch }: { board: BoardData; dispatch: (action: A
   const [addingList, setAddingList] = useState(false)
   const [jumpTo, setJumpTo] = useState<string | null>(null)
   const strip = useRef<HTMLDivElement>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const lastDragEnd = useRef(0)
+
+  // Touch: hold ~300 ms to pick a card up, so a normal swipe still scrolls. Mouse: just drag.
+  const sensors = useSensors(
+    useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+  )
+
+  // Only the visible list's cards and the pills count as drop targets.
+  const activeListId = board.lists[active]?.id
+  const collision: CollisionDetection = (args) => {
+    const targets = args.droppableContainers.filter(
+      (c) => String(c.id).startsWith('pill:') || c.data.current?.listId === activeListId,
+    )
+    const scoped = { ...args, droppableContainers: targets }
+    const onPill = pointerWithin(scoped).filter((c) => String(c.id).startsWith('pill:'))
+    return onPill.length ? onPill : closestCenter(scoped)
+  }
+
+  const onDragStart = ({ active }: DragStartEvent) => setDraggingId(String(active.id))
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    setDraggingId(null)
+    lastDragEnd.current = Date.now()
+    if (!over || active.id === over.id) return
+    const cardId = String(active.id)
+    const toListId = over.data.current?.listId as string | undefined
+    if (!toListId) return
+    if (String(over.id).startsWith('pill:')) {
+      const from = board.lists.find((l) => l.cards.some((c) => c.id === cardId))
+      if (from?.id !== toListId) dispatch({ type: 'moveCard', cardId, toListId })
+      return
+    }
+    const toIndex = board.lists.find((l) => l.id === toListId)?.cards.findIndex((c) => c.id === over.id)
+    dispatch({ type: 'moveCard', cardId, toListId, toIndex })
+  }
+
+  // A drop can be followed by a click on the same card; don't open the sheet for it.
+  const openCardSheet = (cardId: string) => {
+    if (Date.now() - lastDragEnd.current > 300) setOpenCardId(cardId)
+  }
 
   // One list per screen: the horizontal scroll position says which list is showing.
   const onScroll = () => {
@@ -46,9 +93,18 @@ function BoardView({ board, dispatch }: { board: BoardData; dispatch: (action: A
   const openList = board.lists.find((l) => l.cards.some((c) => c.id === openCardId))
   const openCard = openList?.cards.find((c) => c.id === openCardId)
   const menuList = board.lists.find((l) => l.id === menuListId)
+  const draggingCard = board.lists.flatMap((l) => l.cards).find((c) => c.id === draggingId)
 
   return (
     <div className="board-bg flex h-dvh flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={collision}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragCancel={() => setDraggingId(null)}
+        autoScroll={{ threshold: { x: 0, y: 0.2 } }}
+      >
       <ListSwitcher
         lists={board.lists}
         active={active}
@@ -65,7 +121,7 @@ function BoardView({ board, dispatch }: { board: BoardData; dispatch: (action: A
           <div key={list.id} className="flex w-full shrink-0 snap-center flex-col px-4 pt-2 pb-4">
             <ListColumn
               list={list}
-              onOpenCard={(card) => setOpenCardId(card.id)}
+              onOpenCard={(card) => openCardSheet(card.id)}
               onAddCard={(title) => dispatch({ type: 'addCard', listId: list.id, title })}
               onRename={(title) => dispatch({ type: 'renameList', listId: list.id, title })}
               onOpenMenu={() => setMenuListId(list.id)}
@@ -78,6 +134,9 @@ function BoardView({ board, dispatch }: { board: BoardData; dispatch: (action: A
           </div>
         )}
       </div>
+
+      <DragOverlay>{draggingCard && <CardFace card={draggingCard} lifted />}</DragOverlay>
+      </DndContext>
 
       <VersionLine />
 

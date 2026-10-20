@@ -1,3 +1,4 @@
+import { useDroppable } from '@dnd-kit/core'
 import { Plus } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import type { List } from './types'
@@ -21,20 +22,7 @@ export function ListSwitcher({ lists, active, onPick, onAddList }: Props) {
   return (
     <nav ref={row} className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-2">
       {lists.map((list, i) => (
-        <button
-          key={list.id}
-          type="button"
-          onClick={() => onPick(i)}
-          aria-current={i === active}
-          className={`flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[15px] font-semibold uppercase tracking-wide transition-colors ${
-            i === active
-              ? 'border-white/40 bg-white/25 text-white'
-              : 'border-white/10 bg-white/5 text-white/65'
-          }`}
-        >
-          <span className="size-2.5 rounded-full" style={{ background: list.accent }} />
-          {list.title}
-        </button>
+        <Pill key={list.id} list={list} isActive={i === active} onPick={() => onPick(i)} />
       ))}
       <button
         type="button"
@@ -45,5 +33,28 @@ export function ListSwitcher({ lists, active, onPick, onAddList }: Props) {
         <Plus className="size-5" />
       </button>
     </nav>
+  )
+}
+
+// Each pill is also a drop target: drag a card onto it to move the card to that list.
+function Pill({ list, isActive, onPick }: { list: List; isActive: boolean; onPick: () => void }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `pill:${list.id}`, data: { listId: list.id } })
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      onClick={onPick}
+      aria-current={isActive}
+      className={`flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-[15px] font-semibold uppercase tracking-wide transition-all ${
+        isOver
+          ? 'scale-110 border-white bg-white/40 text-white'
+          : isActive
+            ? 'border-white/40 bg-white/25 text-white'
+            : 'border-white/10 bg-white/5 text-white/65'
+      }`}
+    >
+      <span className="size-2.5 rounded-full" style={{ background: list.accent }} />
+      {list.title}
+    </button>
   )
 }

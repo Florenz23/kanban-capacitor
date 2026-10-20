@@ -27,3 +27,10 @@ body {
 }
 .hello h1 { font-size: 64px; font-weight: 700; }
 .hello.test { background: linear-gradient(160deg, #047857, #022c22); }
+
+/* Long-press picks a card up — no iOS text selection or callout menu on top of that */
+.card-touch { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+
+/* The sheet handles vertical swipes itself (swipe down to close); text fields scroll as usual */
+.sheet-swipe { touch-action: none; }
+.sheet-swipe textarea { touch-action: auto; }
