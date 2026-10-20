@@ -1,8 +1,14 @@
 name: iOS build (unsigned .ipa)
 
-# Manual only — never on push. Run it from the Actions tab: "Run workflow".
+# Manual only — never on push. Run it from the Actions tab: "Run workflow", then pick the app.
 on:
   workflow_dispatch:
+    inputs:
+      app:
+        description: Which app to build
+        type: choice
+        options: [kanban, test]
+        default: kanban
 
 jobs:
   ipa:
@@ -11,6 +17,19 @@ jobs:
       contents: write # to publish the .ipa as a release download
     steps:
       - uses: actions/checkout@v4
+
+      # Each app gets its own name, bundle ID and download link,
+      # so the iPhone installs them side by side.
+      - name: Pick the app
+        run: |
+          case "${{ inputs.app }}" in
+            kanban) NAME="Kanban";   BUNDLE_ID="de.florenzerstling.kanban";  TAG="latest" ;;
+            test)   NAME="Test App"; BUNDLE_ID="de.florenzerstling.testapp"; TAG="test-latest" ;;
+          esac
+          echo "NAME=$NAME" >> $GITHUB_ENV
+          echo "BUNDLE_ID=$BUNDLE_ID" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "IPA=${NAME// /}.ipa" >> $GITHUB_ENV
 
       - uses: pnpm/action-setup@v4
 
@@ -23,10 +42,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build the web app
-        run: pnpm build
+        run: VITE_APP=${{ inputs.app }} pnpm build
 
       - name: Copy it into the iOS project
         run: npx cap sync ios
+
+      - name: Name the app on the home screen
+        run: /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $NAME" ios/App/App/Info.plist
 
       - name: Build the app, unsigned
         run: |
@@ -37,6 +59,7 @@ jobs:
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build \
+            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
@@ -45,21 +68,21 @@ jobs:
         run: |
           mkdir Payload
           cp -R build/Build/Products/Release-iphoneos/App.app Payload/
-          zip -qr Kanban.ipa Payload
+          zip -qr "$IPA" Payload
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Kanban-ipa
-          path: Kanban.ipa
+          name: ${{ env.IPA }}
+          path: ${{ env.IPA }}
 
-      # A fixed link the iPhone can open in Safari, no GitHub login:
-      # https://github.com/<owner>/<repo>/releases/download/latest/Kanban.ipa
-      - name: Publish as the "latest" download
+      # A fixed link per app the iPhone can open in a browser, no GitHub login:
+      # https://github.com/<owner>/<repo>/releases/download/<tag>/<app>.ipa
+      - name: Publish as the app's latest download
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete latest --cleanup-tag --yes || true
-          gh release create latest Kanban.ipa \
+          gh release delete "$TAG" --cleanup-tag --yes || true
+          gh release create "$TAG" "$IPA" \
             --prerelease \
-            --title "Latest iPhone build" \
-            --notes "Built from ${GITHUB_SHA::7}. On the iPhone: download Kanban.ipa in Safari, then install it in SideStore."
+            --title "Latest $NAME build" \
+            --notes "Built from ${GITHUB_SHA::7}. On the iPhone: download $IPA, then open it in SideStore."
