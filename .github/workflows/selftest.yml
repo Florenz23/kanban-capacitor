@@ -42,6 +42,7 @@ jobs:
           codesign --force --deep --sign - build/Build/Products/Release-iphonesimulator/App.app
 
       - name: Open it, close it, open it again
+        timeout-minutes: 4
         run: |
           UDID=$(xcrun simctl list devices available -j | python3 -c '
           import json, sys
@@ -51,10 +52,6 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/Build/Products/Release-iphonesimulator/App.app
           mkdir shots
-          # Everything the app logs, for when something goes wrong
-          xcrun simctl spawn "$UDID" log stream --level debug --style compact \
-            --predicate 'process == "App" OR subsystem CONTAINS "capgo" OR eventMessage CONTAINS "CapacitorUpdater"' > shots/app-log.txt 2>&1 &
-          LOG_PID=$!
           xcrun simctl launch --terminate-running-process "$UDID" de.florenzerstling.kanban
           sleep 30
           xcrun simctl io "$UDID" screenshot shots/1-first-open.png
@@ -63,7 +60,9 @@ jobs:
           xcrun simctl launch "$UDID" de.florenzerstling.kanban
           sleep 15
           xcrun simctl io "$UDID" screenshot shots/2-after-reopen.png
-          kill $LOG_PID || true
+          # What the app logged, and crash reports if it crashed
+          xcrun simctl spawn "$UDID" log show --last 3m --style compact \
+            --predicate 'process == "App"' > shots/app-log.txt 2>&1 || true
           cp ~/Library/Logs/DiagnosticReports/App*.ips shots/ 2>/dev/null || echo "no crash reports"
 
       - uses: actions/upload-artifact@v4
