@@ -1,0 +1,13 @@
+html, body, #root { height: 100%; margin: 0; }
+body {
+  font-family: -apple-system, system-ui, sans-serif;
+  background: linear-gradient(160deg, #1e3a8a, #0f172a);
+  color: white;
+}
+.hello {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.hello h1 { font-size: 64px; font-weight: 700; }
