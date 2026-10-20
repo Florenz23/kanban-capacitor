@@ -132,7 +132,7 @@ export function ListColumn({ list, onOpenCard, onAddCard, onRename, onOpenMenu }
           onClick={() => setAdding(true)}
           className="flex min-h-[52px] shrink-0 items-center justify-center gap-2 text-[16px] text-white/90 active:bg-white/10"
         >
-          <Plus className="size-5" /> New Card
+          <Plus className="size-5" style={{ color: list.accent }} /> New Card
         </button>
       )}
     </section>
