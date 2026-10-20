@@ -55,6 +55,7 @@ function Pill({ list, isActive, onPick }: { list: List; isActive: boolean; onPic
     >
       <span className="size-2.5 rounded-full" style={{ background: list.accent }} />
       {list.title}
+      <span className="text-[13px] font-medium text-white/50">{list.cards.length}</span>
     </button>
   )
 }
