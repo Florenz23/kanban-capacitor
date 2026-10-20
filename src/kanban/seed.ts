@@ -19,7 +19,7 @@ export const seedBoard = (): Board => ({
         card('Customizable links', 'Link'),
         card('More language options', 'Globe'),
         card('Video embedding', 'SquarePlay'),
-        card('Emoji support', 'Smile'),
+        card('Emoji support', '😀'),
       ],
     },
     {

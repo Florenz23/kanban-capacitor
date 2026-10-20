@@ -12,6 +12,10 @@ export const icons: Record<string, LucideIcon> = {
 }
 
 export function Icon({ name, className }: { name?: string; className?: string }) {
+  // Not an icon name but an emoji, e.g. '😀': show it as the real, colored emoji.
+  if (name && !icons[name] && /\p{Extended_Pictographic}/u.test(name)) {
+    return <span className={`${className ?? ''} grid place-items-center text-[18px] leading-none`} aria-hidden>{name}</span>
+  }
   const C = (name && icons[name]) || StickyNote
   // The star is filled, as in the reference.
   return <C className={`${className ?? ''} ${name === 'Star' ? 'fill-current' : ''}`} aria-hidden />
