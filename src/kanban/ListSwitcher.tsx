@@ -6,10 +6,11 @@ type Props = {
   lists: List[]
   active: number
   onPick: (index: number) => void
+  onAddList: () => void
 }
 
 // The row of pills on top: where am I, and one tap to jump to another list.
-export function ListSwitcher({ lists, active, onPick }: Props) {
+export function ListSwitcher({ lists, active, onPick, onAddList }: Props) {
   const row = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export function ListSwitcher({ lists, active, onPick }: Props) {
       <button
         type="button"
         aria-label="New list"
+        onClick={onAddList}
         className="grid size-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-white/80"
       >
         <Plus className="size-5" />
