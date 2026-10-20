@@ -29,10 +29,13 @@ const setStatus = (next: Status) => {
 export async function findLatest() {
   const res = await fetch(RELEASE_API, { cache: 'no-store' })
   if (!res.ok) throw new Error(`GitHub ${res.status}`)
-  const release: { assets: { name: string; browser_download_url: string }[] } = await res.json()
+  const release: { assets: { name: string; browser_download_url: string; digest?: string }[] } = await res.json()
   const asset = release.assets.find((a) => /^dist-\d+\.zip$/.test(a.name))
   if (!asset) throw new Error('no update file in the release')
-  return { version: Number(asset.name.match(/\d+/)![0]), url: asset.browser_download_url }
+  // GitHub gives every file a SHA-256 ("sha256:<hex>"); the updater checks the download against it.
+  const checksum = asset.digest?.replace(/^sha256:/, '')
+  if (!checksum) throw new Error('no checksum for the update file')
+  return { version: Number(asset.name.match(/\d+/)![0]), url: asset.browser_download_url, checksum }
 }
 
 async function checkForUpdate() {
@@ -43,7 +46,7 @@ async function checkForUpdate() {
   setStatus({ state: 'downloading', version: latest.version })
   const { bundles } = await CapacitorUpdater.list()
   const ready = bundles.find((b) => b.version === String(latest.version) && b.status === 'success')
-  const bundle = ready ?? (await CapacitorUpdater.download({ url: latest.url, version: String(latest.version) }))
+  const bundle = ready ?? (await CapacitorUpdater.download({ url: latest.url, version: String(latest.version), checksum: latest.checksum }))
   await CapacitorUpdater.next({ id: bundle.id })
   setStatus({ state: 'ready', version: latest.version })
 }
