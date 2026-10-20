@@ -15,7 +15,7 @@ export const BUILD_VERSION = Number(import.meta.env.VITE_WEB_VERSION ?? 0)
 type Status =
   | { state: 'idle' }
   | { state: 'downloading'; version: number }
-  | { state: 'ready'; version: number }
+  | { state: 'ready'; version: number; bundleId: string }
   | { state: 'error'; message: string }
 
 let status: Status = { state: 'idle' }
@@ -48,7 +48,7 @@ async function checkForUpdate() {
   const ready = bundles.find((b) => b.version === String(latest.version) && b.status === 'success')
   const bundle = ready ?? (await CapacitorUpdater.download({ url: latest.url, version: String(latest.version), checksum: latest.checksum }))
   await CapacitorUpdater.next({ id: bundle.id })
-  setStatus({ state: 'ready', version: latest.version })
+  setStatus({ state: 'ready', version: latest.version, bundleId: bundle.id })
 }
 
 export function startLiveUpdates() {
@@ -65,6 +65,9 @@ export function startLiveUpdates() {
     if (document.visibilityState === 'visible') check()
   })
 }
+
+// Switch to the downloaded version right away. The board is saved on every change, so nothing is lost.
+export const applyUpdateNow = (bundleId: string) => CapacitorUpdater.set({ id: bundleId })
 
 export function useUpdateStatus() {
   return useSyncExternalStore(
