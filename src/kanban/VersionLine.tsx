@@ -1,5 +1,5 @@
 import { RefreshCw } from 'lucide-react'
-import { applyUpdateNow, BUILD_VERSION, formatVersion, useUpdateStatus } from '../liveUpdate'
+import { applyUpdateNow, BUILD_VERSION, checkNow, formatVersion, useUpdateStatus } from '../liveUpdate'
 
 // Which version is running, and what the live update is doing.
 export function VersionLine() {
@@ -19,11 +19,16 @@ export function VersionLine() {
           </button>
         </div>
       )}
-      <p className="shrink-0 pb-1 text-center text-[11px] text-white/40">
+      {/* Tap to look for an update right now */}
+      <button
+        type="button"
+        onClick={checkNow}
+        className="min-h-8 shrink-0 px-4 pb-1 text-center text-[11px] text-white/40 active:text-white/70"
+      >
         Version {formatVersion(BUILD_VERSION)}
         {status.state === 'downloading' && ` · downloading ${formatVersion(status.version)}…`}
         {status.state === 'error' && <span className="text-red-300"> · update check failed: {status.message}</span>}
-      </p>
+      </button>
     </>
   )
 }

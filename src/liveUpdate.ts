@@ -51,18 +51,27 @@ async function checkForUpdate() {
   setStatus({ state: 'ready', version: latest.version, bundleId: bundle.id })
 }
 
+// Every 2 minutes while the app is open. GitHub allows ~60 unauthenticated API calls per hour
+// per network, shared by all apps on it, so not more often.
+const CHECK_EVERY_MS = 2 * 60 * 1000
+
+// Check now; also what tapping the version line does.
+export const checkNow = () =>
+  checkForUpdate().catch((e: unknown) =>
+    setStatus({ state: 'error', message: e instanceof Error ? e.message : String(e) }),
+  )
+
 export function startLiveUpdates() {
   if (!Capacitor.isNativePlatform()) return
   // Tells the updater this version started fine; without it, it rolls back to the previous one.
   CapacitorUpdater.notifyAppReady()
 
-  const check = () =>
-    checkForUpdate().catch((e: unknown) =>
-      setStatus({ state: 'error', message: e instanceof Error ? e.message : String(e) }),
-    )
-  check()
+  checkNow()
+  setInterval(() => {
+    if (document.visibilityState === 'visible' && status.state !== 'ready') checkNow()
+  }, CHECK_EVERY_MS)
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') check()
+    if (document.visibilityState === 'visible') checkNow()
   })
 }
 
