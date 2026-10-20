@@ -1,9 +1,24 @@
+@import 'tailwindcss';
+
 html, body, #root { height: 100%; margin: 0; }
 body {
-  font-family: -apple-system, system-ui, sans-serif;
-  background: linear-gradient(160deg, #1e3a8a, #0f172a);
+  font-family: -apple-system, system-ui, 'Inter', sans-serif;
+  background: #0b1a45;
   color: white;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
+
+.board-bg {
+  background:
+    radial-gradient(ellipse at 55% 75%, rgba(70, 90, 160, 0.45), transparent 60%),
+    linear-gradient(170deg, #1f3f8f 0%, #13265e 45%, #0b1a45 100%);
+}
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Test App: the plain one-page second app */
 .hello {
   height: 100%;
   display: grid;
