@@ -7,6 +7,8 @@ on:
 jobs:
   ipa:
     runs-on: macos-15
+    permissions:
+      contents: write # to publish the .ipa as a release download
     steps:
       - uses: actions/checkout@v4
 
@@ -49,3 +51,15 @@ jobs:
         with:
           name: Kanban-ipa
           path: Kanban.ipa
+
+      # A fixed link the iPhone can open in Safari, no GitHub login:
+      # https://github.com/<owner>/<repo>/releases/download/latest/Kanban.ipa
+      - name: Publish as the "latest" download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest Kanban.ipa \
+            --prerelease \
+            --title "Latest iPhone build" \
+            --notes "Built from ${GITHUB_SHA::7}. On the iPhone: download Kanban.ipa in Safari, then install it in SideStore."
