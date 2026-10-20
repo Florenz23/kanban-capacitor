@@ -38,3 +38,15 @@ Result: **SideStore accepts the unsigned .ipa** from GitHub Actions.
 - Free Apple ID: 3 sideloaded apps at once, SideStore is one of them
 - Apps expire after 7 days: open SideStore with LocalDevVPN connected to refresh, no Mac needed
 - New version of the app: Actions → iOS build → Run workflow (~1.5 min), then step 12 again
+
+## A second app (Test App)
+
+Once the phone is set up, a second app is: GitHub → Actions → iOS build → Run workflow → pick **test**
+(~2 min) → on the phone, `github.com/Florenz23/kanban-capacitor/releases` → TestApp.ipa → Open in
+SideStore. Nothing to install, nothing new on the Mac. It sits beside Kanban because it has its own
+bundle ID (`de.florenzerstling.testapp`).
+
+That fills the free Apple ID: SideStore + Kanban + Test App = 3. More apps:
+- **Apple Developer Program**, $99 / 99 € a year: no 3-app limit, 1-year signing, TestFlight, App Store
+- **Free:** several apps inside one installed app (spec §4, nested routes `/kanban`, `/meals`), or
+  deactivate an unused app in SideStore to free its slot
