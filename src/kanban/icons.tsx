@@ -13,5 +13,6 @@ export const icons: Record<string, LucideIcon> = {
 
 export function Icon({ name, className }: { name?: string; className?: string }) {
   const C = (name && icons[name]) || StickyNote
-  return <C className={className} aria-hidden />
+  // The star is filled, as in the reference.
+  return <C className={`${className ?? ''} ${name === 'Star' ? 'fill-current' : ''}`} aria-hidden />
 }
