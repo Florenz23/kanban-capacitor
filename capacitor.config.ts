@@ -8,6 +8,11 @@ const config: CapacitorConfig = {
   appId: 'de.florenzerstling.kanban',
   appName: 'Kanban',
   webDir: 'dist',
+  plugins: {
+    // Live updates, self-hosted on GitHub releases (src/liveUpdate.ts decides when).
+    // statsUrl '' = no usage stats sent to Capgo.
+    CapacitorUpdater: { autoUpdate: false, statsUrl: '' },
+  },
   ...(devUrl ? { server: { url: devUrl, cleartext: true } } : {}),
 }
 

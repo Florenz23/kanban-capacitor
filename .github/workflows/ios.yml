@@ -42,7 +42,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build the web app
-        run: VITE_APP=${{ inputs.app }} pnpm build
+        run: VITE_APP=${{ inputs.app }} VITE_WEB_VERSION=$(git log -1 --format=%ct) pnpm build
 
       - name: Copy it into the iOS project
         run: npx cap sync ios
