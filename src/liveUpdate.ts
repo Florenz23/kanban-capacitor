@@ -1,27 +1,51 @@
-import { Capacitor, CapacitorHttp } from '@capacitor/core'
+import { Capacitor } from '@capacitor/core'
 import { CapacitorUpdater } from '@capgo/capacitor-updater'
+import { useSyncExternalStore } from 'react'
 
-// Every push to main publishes the web part as dist.zip + version.json on the release "web-<app>"
-// (.github/workflows/web.yml). The app checks it, downloads a newer one in the background and
-// switches to it the next time it's closed and opened again. No new .ipa needed.
+// Every push to main publishes the web part as dist-<version>.zip on the release "web-<app>"
+// (.github/workflows/web.yml). The app looks it up through the GitHub API (real JSON, readable
+// from the app), downloads a newer one in the background and switches to it the next time it's
+// closed and opened again. No new .ipa needed.
 const app = import.meta.env.VITE_APP ?? 'kanban'
-const VERSION_URL = `https://github.com/Florenz23/kanban-capacitor/releases/download/web-${app}/version.json`
+const RELEASE_API = `https://api.github.com/repos/Florenz23/kanban-capacitor/releases/tags/web-${app}`
 
 // The commit time of this build (seconds). Newer commit = higher number, so updates only go forward.
 export const BUILD_VERSION = Number(import.meta.env.VITE_WEB_VERSION ?? 0)
 
-type Latest = { version: string; url: string }
+type Status =
+  | { state: 'idle' }
+  | { state: 'downloading'; version: number }
+  | { state: 'ready'; version: number }
+  | { state: 'error'; message: string }
+
+let status: Status = { state: 'idle' }
+const listeners = new Set<() => void>()
+const setStatus = (next: Status) => {
+  status = next
+  listeners.forEach((l) => l())
+}
+
+// What the newest published web part is, from the release's asset name: dist-<version>.zip
+export async function findLatest() {
+  const res = await fetch(RELEASE_API, { cache: 'no-store' })
+  if (!res.ok) throw new Error(`GitHub ${res.status}`)
+  const release: { assets: { name: string; browser_download_url: string }[] } = await res.json()
+  const asset = release.assets.find((a) => /^dist-\d+\.zip$/.test(a.name))
+  if (!asset) throw new Error('no update file in the release')
+  return { version: Number(asset.name.match(/\d+/)![0]), url: asset.browser_download_url }
+}
 
 async function checkForUpdate() {
-  const res = await CapacitorHttp.get({ url: VERSION_URL, params: { t: String(Date.now()) } })
-  if (res.status !== 200) return
-  const latest: Latest = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
-  if (!(Number(latest.version) > BUILD_VERSION)) return
+  if (status.state === 'downloading') return
+  const latest = await findLatest()
+  if (!(latest.version > BUILD_VERSION)) return
 
+  setStatus({ state: 'downloading', version: latest.version })
   const { bundles } = await CapacitorUpdater.list()
-  const ready = bundles.find((b) => b.version === latest.version && b.status === 'success')
-  const bundle = ready ?? (await CapacitorUpdater.download({ url: latest.url, version: latest.version }))
+  const ready = bundles.find((b) => b.version === String(latest.version) && b.status === 'success')
+  const bundle = ready ?? (await CapacitorUpdater.download({ url: latest.url, version: String(latest.version) }))
   await CapacitorUpdater.next({ id: bundle.id })
+  setStatus({ state: 'ready', version: latest.version })
 }
 
 export function startLiveUpdates() {
@@ -29,9 +53,25 @@ export function startLiveUpdates() {
   // Tells the updater this version started fine; without it, it rolls back to the previous one.
   CapacitorUpdater.notifyAppReady()
 
-  const check = () => checkForUpdate().catch(() => {})
+  const check = () =>
+    checkForUpdate().catch((e: unknown) =>
+      setStatus({ state: 'error', message: e instanceof Error ? e.message : String(e) }),
+    )
   check()
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') check()
   })
 }
+
+export function useUpdateStatus() {
+  return useSyncExternalStore(
+    (l) => {
+      listeners.add(l)
+      return () => listeners.delete(l)
+    },
+    () => status,
+  )
+}
+
+export const formatVersion = (v: number) =>
+  new Date(v * 1000).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })

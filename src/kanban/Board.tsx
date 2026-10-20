@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { BUILD_VERSION } from '../liveUpdate'
 import type { Action } from './boardReducer'
 import { CardSheet } from './CardSheet'
 import { ListColumn } from './ListColumn'
@@ -8,6 +7,7 @@ import { ListSwitcher } from './ListSwitcher'
 import { NewListSheet } from './NewListSheet'
 import type { Board as BoardData } from './types'
 import { usePersistentBoard } from './usePersistentBoard'
+import { VersionLine } from './VersionLine'
 
 export function Board() {
   const [board, dispatch] = usePersistentBoard()
@@ -79,11 +79,7 @@ function BoardView({ board, dispatch }: { board: BoardData; dispatch: (action: A
         )}
       </div>
 
-      {BUILD_VERSION > 0 && (
-        <p className="shrink-0 pb-1 text-center text-[11px] text-white/35">
-          Version {new Date(BUILD_VERSION * 1000).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-        </p>
-      )}
+      <VersionLine />
 
       {openCard && openList && (
         <CardSheet

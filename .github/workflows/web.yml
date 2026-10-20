@@ -39,20 +39,18 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           VITE_APP=${{ matrix.app }} VITE_WEB_VERSION=$VERSION pnpm build
 
+      # The version goes into the file name; the app reads it from the release via the GitHub API.
       - name: Zip it
         run: |
-          (cd dist && zip -qr ../dist.zip .)
-          TAG=web-${{ matrix.app }}
-          echo "TAG=$TAG" >> $GITHUB_ENV
-          echo "{\"version\":\"$VERSION\",\"url\":\"https://github.com/${{ github.repository }}/releases/download/$TAG/dist.zip\"}" > version.json
-          cat version.json
+          (cd dist && zip -qr ../dist-$VERSION.zip .)
+          echo "TAG=web-${{ matrix.app }}" >> $GITHUB_ENV
 
       - name: Publish for the apps
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete "$TAG" --cleanup-tag --yes || true
-          gh release create "$TAG" dist.zip version.json \
+          gh release create "$TAG" "dist-$VERSION.zip" \
             --prerelease \
             --title "Live update: ${{ matrix.app }}" \
             --notes "Web part from ${GITHUB_SHA::7}. Installed apps download it on their own."
