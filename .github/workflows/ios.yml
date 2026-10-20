@@ -1,0 +1,51 @@
+name: iOS build (unsigned .ipa)
+
+# Manual only — never on push. Run it from the Actions tab: "Run workflow".
+on:
+  workflow_dispatch:
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the web app
+        run: pnpm build
+
+      - name: Copy it into the iOS project
+        run: npx cap sync ios
+
+      - name: Build the app, unsigned
+        run: |
+          xcodebuild build \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package as .ipa
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr Kanban.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kanban-ipa
+          path: Kanban.ipa
